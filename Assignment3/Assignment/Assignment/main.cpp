@@ -19,6 +19,9 @@
 // Other Libs
 #include <SOIL.h>
 
+# define M_PI           3.14159265358979323846  /* pi */
+
+
 
 // Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -26,18 +29,29 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void do_movement();
-void change_mode();
+void change_speed();
 bool loadOBJ(const char* path, std::vector <glm::vec3 >& out_vertices,
     std::vector < glm::vec2 >& out_uvs,
     std::vector < glm::vec3 >& out_normals);
 GLuint loadTexture(const char* path, GLboolean alpha);
 
 
+class planet
+{
+public:
+    GLfloat angle;
+    GLfloat distance;
+    GLuint texture;
+    GLfloat scale;
+};
+
+planet planets[8];
+
 // Window dimensions
 GLuint WIDTH = 800, HEIGHT = 600;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 10.0f, 10.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -46,6 +60,10 @@ GLint mode;
 // Deltatime
 GLfloat deltaTime = 0.0f;    // Time between current frame and last frame
 GLfloat lastFrame = 0.0f;      // Time of last frame
+
+// Distance
+GLfloat distance = 1.0f;
+GLfloat speed = 0.0003;
 
 
 
@@ -83,10 +101,7 @@ int main()
 
 
     // Build and compile our shader program
-    Shader* ourShader{};
-    Shader ourShader1("main.vert.glsl", "main.frag.glsl");
-    Shader ourShader2("texture.vert.glsl", "texture.frag.glsl");
-    Shader ourShader3("main.vert.glsl", "main.frag2.glsl");
+    Shader ourShader("texture.vert.glsl", "texture.frag.glsl");
 
 
 
@@ -124,7 +139,34 @@ int main()
     glBindVertexArray(0); // Unbind VAO
 
 
-    GLuint earthTexture = loadTexture("earth.jpg", true);
+        // Load textures
+    planets[2].texture = loadTexture("Texture/earth.jpg", true);
+    planets[4].texture = loadTexture("Texture/jupiter.jpg", true);
+    planets[3].texture = loadTexture("Texture/mars.jpg", true);
+    planets[0].texture = loadTexture("Texture/mercury.jpg", true);
+    GLuint moonTexture = loadTexture("Texture/moon.jpg", true);
+    planets[7].texture = loadTexture("Texture/neptune.jpg", true);
+    planets[5].texture = loadTexture("Texture/saturn.jpg", true);
+    GLuint sunTexture = loadTexture("Texture/sun.jpg", true);
+    planets[6].texture = loadTexture("Texture/uranus.jpg", true);
+    planets[1].texture = loadTexture("Texture/venus.jpg", true);
+
+    // defining initial values of planets
+
+    for (int i = 0; i < 8; i++) {
+        planets[i].distance = distance;
+        planets[i].angle = 0;
+        distance += 0.5f * log(i + 4);
+    }
+
+    planets[0].scale = 0.38f;
+    planets[1].scale = 0.94f;
+    planets[2].scale = 1.0f;
+    planets[3].scale = 0.53f;
+    planets[4].scale = 2.0f;
+    planets[5].scale = 1.6f;
+    planets[6].scale = 1.2f;
+    planets[7].scale = 1.3f;
 
 
     // Game loop
@@ -138,7 +180,7 @@ int main()
         // Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
         glfwPollEvents();
         do_movement();
-        change_mode();
+        change_speed();
 
         // Render
         // Clear the colorbuffer
@@ -146,10 +188,8 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Activate shader
-        if (mode == 0) ourShader = &ourShader1;
-        else if (mode == 1) ourShader = &ourShader2;
-        else ourShader = &ourShader3;
-        ourShader->Use();
+        
+        ourShader.Use();
         // Camera/View transformation
         glm::mat4 view(1);
         view = camera.GetViewMatrix();
@@ -157,29 +197,44 @@ int main()
         glm::mat4 projection(1);
         projection = glm::perspective(glm::radians(camera.Zoom), (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
         // Get the uniform locations
-        GLint modelLoc = glGetUniformLocation(ourShader->Program, "model");
-        GLint viewLoc = glGetUniformLocation(ourShader->Program, "view");
-        GLint projLoc = glGetUniformLocation(ourShader->Program, "projection");
+        GLint modelLoc = glGetUniformLocation(ourShader.Program, "model");
+        GLint viewLoc = glGetUniformLocation(ourShader.Program, "view");
+        GLint projLoc = glGetUniformLocation(ourShader.Program, "projection");
+        GLfloat scaleLoc = glGetUniformLocation(ourShader.Program, "scale");
         // Pass the matrices to the shader
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-        
+        for (int i = 0; i < 8; i++) {
+            glUniform1f(scaleLoc, planets[i].scale);
+
+            planets[i].angle = planets[i].angle > 2 * M_PI ? planets[i].angle + M_PI * speed / log(i * i / 2.5 + 2) - 2 * M_PI : planets[i].angle + M_PI * speed / log(i * i / 2.5 + 2);
+            glBindVertexArray(VAO);
+            glBindTexture(GL_TEXTURE_2D, planets[i].texture);
+            glm::mat4 model_vertex(1);
+            model_vertex = glm::translate(model_vertex, 
+                glm::vec3(planets[i].distance * sin(planets[i].angle), 0.0f, planets[i].distance * cos(planets[i].angle)));
+
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model_vertex));
+
+            glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        }
+
+        // Render sun
+        glUniform1f(scaleLoc, 4.0f);
         glBindVertexArray(VAO);
-        glBindTexture(GL_TEXTURE_2D, earthTexture);
-
-
+        glBindTexture(GL_TEXTURE_2D, sunTexture);
         glm::mat4 model_vertex(1);
-        model_vertex = glm::translate(model_vertex, glm::vec3(0.0f, 0.0f, -1.0f));
+        model_vertex = glm::translate(model_vertex,
+            glm::vec3(0.0f, 0.0f, 0.0f));
+
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model_vertex));
 
-        if (mode == 0) glDrawArrays(GL_POINTS, 0, vertices.size());
-        if (mode == 1) {
-            glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-        }
-        if (mode == 2) {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-        }
+        glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+
+        
+        
+
         
         glBindVertexArray(0);
 
@@ -230,15 +285,15 @@ void do_movement()
         camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-void change_mode()
+void change_speed()
 {
-    if (keys[GLFW_KEY_1])
-        mode = 0;
-    if (keys[GLFW_KEY_2])
-        mode = 1;
-    if (keys[GLFW_KEY_3])
-        mode = 2;
+    if (keys[GLFW_KEY_RIGHT])
+        speed += 0.000001;
+    if (keys[GLFW_KEY_LEFT])
+        speed -= 0.000001;
 }
+
+
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
