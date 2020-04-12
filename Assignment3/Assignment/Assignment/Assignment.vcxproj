@@ -74,8 +74,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\Docs\MainDocs\2nd_sem\Graphics\soil\Simple OpenGL Image Library\src;D:\Programs\glfw\glfw-3.3.2.bin.WIN64\include;D:\Programs\glm\glm-0.9.9.1;D:\Programs\glad\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Programs\glfw\glfw-3.3.2.bin.WIN64\lib-vc2019;D:\Docs\MainDocs\2nd_sem\Graphics\soil\Simple OpenGL Image Library\projects\VC9\x64\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Docs\MainDocs\2nd_sem\Graphics\soil\Simple OpenGL Image Library\src;D:\Programs\glfw\glfw-3.3.2.bin.WIN64\include;D:\Programs\glm\glm-0.9.9.1;D:\Programs\glad\include;D:\Programs\freetype\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Programs\freetype\win64;D:\Programs\glfw\glfw-3.3.2.bin.WIN64\lib-vc2019;D:\Docs\MainDocs\2nd_sem\Graphics\soil\Simple OpenGL Image Library\projects\VC9\x64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -105,7 +105,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glfw3.lib;SOIL.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;SOIL.lib;opengl32.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -149,11 +149,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="main.frag.glsl" />
-    <None Include="main.frag1.glsl" />
-    <None Include="main.frag2.glsl" />
-    <None Include="main.frag3.glsl" />
-    <None Include="main.vert.glsl" />
+    <None Include="text.frag.glsl" />
+    <None Include="text.vert.glsl" />
     <None Include="texture.frag.glsl" />
     <None Include="texture.vert.glsl" />
   </ItemGroup>

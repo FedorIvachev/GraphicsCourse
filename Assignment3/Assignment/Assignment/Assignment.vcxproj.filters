@@ -31,12 +31,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="main.frag.glsl" />
-    <None Include="main.frag1.glsl" />
-    <None Include="main.frag2.glsl" />
-    <None Include="main.frag3.glsl" />
-    <None Include="main.vert.glsl" />
     <None Include="texture.frag.glsl" />
     <None Include="texture.vert.glsl" />
+    <None Include="text.frag.glsl" />
+    <None Include="text.vert.glsl" />
   </ItemGroup>
 </Project>
