@@ -393,8 +393,6 @@ int main()
 
             GLint viewport[4];
 
-            //glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
-            //glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
             glGetIntegerv(GL_VIEWPORT, viewport);
 
 
