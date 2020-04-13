@@ -41,6 +41,7 @@ bool loadOBJ(const char* path, std::vector <glm::vec3 >& out_vertices,
     std::vector < glm::vec3 >& out_normals);
 GLuint loadTexture(const char* path, GLboolean alpha);
 void RenderText(Shader& shader, std::string text, GLfloat x, GLfloat y, GLfloat scale, glm::vec3 color);
+int glhProjectf(double objx, double objy, double objz, double* modelview, double* projection, int* viewport, double* windowCoordinatex, double* windowCoordinatey, double* windowCoordinatez);
 
 
 class planet
@@ -50,8 +51,9 @@ public:
     GLfloat distance;
     GLuint texture;
     GLfloat scale;
-    GLfloat x;
-    GLfloat y;
+    double x;
+    double y;
+    std::string name;
 };
 
 planet planets[8];
@@ -279,6 +281,15 @@ int main()
     planets[6].scale = 1.2f;
     planets[7].scale = 1.3f;
 
+    planets[0].name = "mercury";
+    planets[1].name = "venus";
+    planets[2].name = "earth";
+    planets[3].name = "mars";
+    planets[4].name = "jupiter";
+    planets[5].name = "saturn";
+    planets[6].name = "uranus";
+    planets[7].name = "neptune";
+
 
     // Game loop
     while (!glfwWindowShouldClose(window))
@@ -302,9 +313,9 @@ int main()
         std::string speed_text = "Current Speed : " + std::to_string(speed);
         RenderText(text_shader, speed_text, 25.0f, 10.0f, 0.3f, glm::vec3(0.5, 0.5f, 0.8f));
 
-        //for (int i = 0; i < 8; i++) {
-            //RenderText(text_shader, "Sample text", , 0.3f, glm::vec3(0.5, 0.5f, 0.8f));
-        //}
+        for (int i = 0; i < 8; i++) {
+            RenderText(text_shader, planets[i].name, planets[i].x, planets[i].y, 0.3f, glm::vec3(0.5, 0.5f, 0.8f));
+        }
 
 
 
@@ -337,7 +348,57 @@ int main()
                 glm::vec3(planets[i].distance * sin(planets[i].angle), 0.0f, planets[i].distance * cos(planets[i].angle)));
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model_vertex));
+            glm::mat4 coords = view * model_vertex;
 
+            double zval;
+
+
+            double modelMatrix[16];
+
+            modelMatrix[0] =  coords[0][0];
+            modelMatrix[1] =  coords[0][1];
+            modelMatrix[2] =  coords[0][2];
+            modelMatrix[3] =  coords[0][3];
+            modelMatrix[4] =  coords[1][0];
+            modelMatrix[5] =  coords[1][1];
+            modelMatrix[6] =  coords[1][2];
+            modelMatrix[7] =  coords[1][3];
+            modelMatrix[8] =  coords[2][0];
+            modelMatrix[9] =  coords[2][1];
+            modelMatrix[10] = coords[2][2];
+            modelMatrix[11] = coords[2][3];
+            modelMatrix[12] = coords[3][0];
+            modelMatrix[13] = coords[3][1];
+            modelMatrix[14] = coords[3][2];
+            modelMatrix[15] = coords[3][3];
+
+            double projMatrix[16];
+
+            projMatrix[0] =  projection[0][0];
+            projMatrix[1] =  projection[0][1];
+            projMatrix[2] =  projection[0][2];
+            projMatrix[3] =  projection[0][3];
+            projMatrix[4] =  projection[1][0];
+            projMatrix[5] =  projection[1][1];
+            projMatrix[6] =  projection[1][2];
+            projMatrix[7] =  projection[1][3];
+            projMatrix[8] =  projection[2][0];
+            projMatrix[9] =  projection[2][1];
+            projMatrix[10] = projection[2][2];
+            projMatrix[11] = projection[2][3];
+            projMatrix[12] = projection[3][0];
+            projMatrix[13] = projection[3][1];
+            projMatrix[14] = projection[3][2];
+            projMatrix[15] = projection[3][3];
+
+            GLint viewport[4];
+
+            //glGetDoublev(GL_MODELVIEW_MATRIX, modelMatrix);
+            //glGetDoublev(GL_PROJECTION_MATRIX, projMatrix);
+            glGetIntegerv(GL_VIEWPORT, viewport);
+
+
+            glhProjectf(-0.5f, -0.5f, 0.0f, modelMatrix, projMatrix, viewport, &planets[i].x, &planets[i].y, &zval);
             glDrawArrays(GL_TRIANGLES, 0, vertices.size());
             
 
@@ -599,4 +660,37 @@ void RenderText(Shader& shader, std::string text, GLfloat x, GLfloat y, GLfloat 
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+// from :: https://www.khronos.org/opengl/wiki/GluProject_and_gluUnProject_code
+int glhProjectf(double objx, double objy, double objz, double* modelview, double* projection, int* viewport, double *windowCoordinatex, double* windowCoordinatey, double* windowCoordinatez)
+{
+    // Transformation vectors
+    double fTempo[8];
+    // Modelview transform
+    fTempo[0] = modelview[0] * objx + modelview[4] * objy + modelview[8] * objz + modelview[12]; // w is always 1
+    fTempo[1] = modelview[1] * objx + modelview[5] * objy + modelview[9] * objz + modelview[13];
+    fTempo[2] = modelview[2] * objx + modelview[6] * objy + modelview[10] * objz + modelview[14];
+    fTempo[3] = modelview[3] * objx + modelview[7] * objy + modelview[11] * objz + modelview[15];
+    // Projection transform, the final row of projection matrix is always [0 0 -1 0]
+    // so we optimize for that.
+    fTempo[4] = projection[0] * fTempo[0] + projection[4] * fTempo[1] + projection[8] * fTempo[2] + projection[12] * fTempo[3];
+    fTempo[5] = projection[1] * fTempo[0] + projection[5] * fTempo[1] + projection[9] * fTempo[2] + projection[13] * fTempo[3];
+    fTempo[6] = projection[2] * fTempo[0] + projection[6] * fTempo[1] + projection[10] * fTempo[2] + projection[14] * fTempo[3];
+    fTempo[7] = -fTempo[2];
+    // The result normalizes between -1 and 1
+    if (fTempo[7] == 0.0) // The w value
+        return 0;
+    fTempo[7] = 1.0 / fTempo[7];
+    // Perspective division
+    fTempo[4] *= fTempo[7];
+    fTempo[5] *= fTempo[7];
+    fTempo[6] *= fTempo[7];
+    // Window coordinates
+    // Map x, y to range 0-1
+    *windowCoordinatex = (fTempo[4] * 0.5 + 0.5) * viewport[2] + viewport[0];
+    *windowCoordinatey = (fTempo[5] * 0.5 + 0.5) * viewport[3] + viewport[1];
+    // This is only correct when glDepthRange(0.0, 1.0)
+    *windowCoordinatez = (1.0 + fTempo[6]) * 0.5;	// Between 0 and 1
+    return 1;
 }
