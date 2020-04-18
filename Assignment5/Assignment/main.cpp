@@ -76,7 +76,7 @@ int main()
     Shader ourShader2("main.vert.glsl", "main.frag2.glsl");
     
     // Set up vertex data (and buffer(s)) and attribute pointers
-    // 16 control points
+    // 25 control points
     GLfloat vertices[] = {
         -1.5, 2.5, -3.,
         -0.5, 1., -3.,
