@@ -27,6 +27,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void do_movement();
 bool loadOBJ(const char* path, std::vector < glm::vec3 >& out_vertices, std::vector <std::vector<int>>& surrounding_indexes, std::vector< unsigned int >& vertexIndices);
 
+bool mode_normal = true;
+
 // Window dimensions
 GLuint WIDTH = 800, HEIGHT = 600;
 
@@ -192,13 +194,13 @@ int main()
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
-    // First, set the container's VAO (and VBO)
+    // First, set the container's VAO (and VBO) for normal vector mesh
     GLuint VBO, containerVAO;
     glGenVertexArrays(1, &containerVAO);
     glGenBuffers(1, &VBO);
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &vertices_smooth[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), &vertices[0], GL_STATIC_DRAW);
     
     glBindVertexArray(containerVAO);
     // Position attribute
@@ -208,6 +210,25 @@ int main()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
+
+    // Second, set the container's VAO (and VBO) for smooth normal vector mesh
+
+    GLuint smoothVBO, smoothcontainerVAO;
+    glGenVertexArrays(1, &smoothcontainerVAO);
+    glGenBuffers(1, &smoothVBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, smoothVBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices_smooth.size() * sizeof(GLfloat), &vertices_smooth[0], GL_STATIC_DRAW);
+
+    glBindVertexArray(smoothcontainerVAO);
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+    // Normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
     
     // Then, we set the light's VAO (VBO stays the same. After all, the vertices are the same for the light object (also a 3D cube))
     GLuint lightVBO, lightVAO;
@@ -296,7 +317,7 @@ int main()
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
         
         // Draw the container (using container's vertex attributes)
-        glBindVertexArray(containerVAO);
+        glBindVertexArray(mode_normal ? containerVAO : smoothcontainerVAO);
         glm::mat4 model(1);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glEnable(GL_POINT_SMOOTH);
@@ -342,7 +363,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-   
+    if (key == GLFW_KEY_X && action == GLFW_PRESS)
+        mode_normal = !mode_normal;
     if (key >= 0 && key < 1024)
     {
         if (action == GLFW_PRESS)
@@ -392,7 +414,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(yoffset);
 }
 
-// loading obj file, code based on http://www.opengl-tutorial.org/beginners-tutorials/tutorial-7-model-loading/
 bool loadOBJ(const char* path, std::vector < glm::vec3 >& out_vertices, std::vector <std::vector<int>>& surrounding_indexes, std::vector< unsigned int >& vertexIndices) {
     std::vector< glm::vec3 > temp_vertices;
     FILE* file = fopen(path, "r");
