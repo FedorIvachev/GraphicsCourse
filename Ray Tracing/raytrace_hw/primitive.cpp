@@ -218,7 +218,6 @@ void Cylinder::Input( std::string var , std::stringstream& fin ) {
 
 CollidePrimitive Cylinder::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	CollidePrimitive ret;
-	CollidePrimitive ret1;
 
 	//NEED TO IMPLEMENT
 	//Only half of cylinder is rendered/// FIX IT
@@ -244,13 +243,11 @@ CollidePrimitive Cylinder::Collide( Vector3 ray_O , Vector3 ray_V ) {
 			if (x1 > EPS) {
 				if ((L.Dot(ray_O + ray_V * x1 - O1) > EPS) && (L.Dot(ray_O + ray_V * x1 - O2) < EPS)) {
 					t1 = x1;
-					ret.front = true;
 				}
 			}
 			else {
 				if ((L.Dot(ray_O + ray_V * x2 - O1) > EPS) && (L.Dot(ray_O + ray_V * x2 - O2) < EPS)) {
 					t2 = x2;
-					ret.front = false;
 				}
 			}
 		}
@@ -273,6 +270,7 @@ CollidePrimitive Cylinder::Collide( Vector3 ray_O , Vector3 ray_V ) {
 
 	if ((t1 < t3) && (t1 < t4)) {
 		ret.dist = t1;
+		ret.front = true;
 		ret.C = ray_O + ray_V * ret.dist;
 		Vector3 Ph = (ret.C - O1).Dot(O2 - O1) / (O2 - O1).Module2() * (O2 - O1) + O1;
 		ret.N = (ret.C - Ph).GetUnitVector();
@@ -281,6 +279,7 @@ CollidePrimitive Cylinder::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	else if ((t2 < t3) && (t2 < t4)) {
 
 		ret.dist = t2;
+		ret.front = false;
 		ret.C = ray_O + ray_V * ret.dist;
 		Vector3 Ph = (ret.C - O1).Dot(O2 - O1) / (O2 - O1).Module2() * (O2 - O1) + O1;
 		ret.N = (ret.C - Ph).GetUnitVector();
@@ -303,7 +302,7 @@ CollidePrimitive Cylinder::Collide( Vector3 ray_O , Vector3 ray_V ) {
 		//}
 	}
 	else {
-		return ret1;
+		return ret;
 	}
 
 	ret.isCollide = true;
@@ -357,12 +356,51 @@ void Bezier::Input( std::string var , std::stringstream& fin ) {
 CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	CollidePrimitive ret;
 	//NEED TO IMPLEMENT
-	return ret;
+	CollidePrimitive ret1 = boundingCylinder->Collide(ray_O, ray_V);
+
+	if (!ret1.isCollide) return ret;
+	//double bez_len = (ret1.C - O1).Dot(O2 - O1) / (O2 - O1).Module2(); // u
+	Vector3 z_cur, z_next;
+	double r_cur;
+	//double R1 = (1 - proj_len) * (1 - proj_len) * Z[0] * R[0] + (1 - proj_len) * Z[1] * R[1] + proj_len * Z[2] * R[2];
+	//ret1.C = ret1.C - ret1.N * (R1 / boundingCylinder->R);
+	//ret1.dist = ret1.dist - (ret1.N * (R1 / boundingCylinder->R)).Dot(ray_V);
+	
+	double min_dist = 1e9;
+	double tmp_dist;
+	double min_u = 0;
+	for (double u = 0; u - 0.9 < EPS;) {
+		z_cur = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
+		r_cur = (1 - u) * (1 - u) * R[0] + 2 * u * (1 - u) * R[1] + u * u * R[2];
+		u += 0.1;
+		z_next = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
+		Cylinder* curCylinder = new Cylinder(z_cur, z_next, r_cur);
+		tmp_dist = curCylinder->Collide(ray_O, ray_V).dist;
+		if (tmp_dist < min_dist) {
+			min_dist = tmp_dist;
+			min_u = u - 0.1;
+		}
+		delete curCylinder;
+	}
+	double u = min_u;
+	z_cur = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
+	r_cur = (1 - u) * (1 - u) * R[0] + 2 * u * (1 - u) * R[1] + u * u * R[2];
+	u += 0.1;
+	z_next = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
+	Cylinder* curCylinder = new Cylinder(z_cur, z_next, r_cur);
+	ret1 = curCylinder->Collide(ray_O, ray_V);
+	delete curCylinder;
+	if (ret1.isCollide == false) return ret;
+	ret1.collide_primitive = this;
+	return ret1;
 }
 
 Color Bezier::GetTexture(Vector3 crash_C) {
-	double u = 0.5 ,v = 0.5;
 	//NEED TO IMPLEMENT
+	double u = 0.5;
+	double v = 0.5;
+	
+
 	return material->texture->GetSmoothColor( u , v );
 }
 

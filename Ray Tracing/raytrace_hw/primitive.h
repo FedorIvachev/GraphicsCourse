@@ -131,9 +131,10 @@ public:
 
 class Cylinder : public Primitive {
 	Vector3 O1, O2;
-	double R;
 
 public:
+
+	double R; // brought to public for easier access
 	Cylinder() : Primitive() {}
 	Cylinder(Vector3 pO1, Vector3 pO2, double pR) : Primitive() {O1 = pO1; O2 = pO2; R = pR; }
 	~Cylinder() {}
