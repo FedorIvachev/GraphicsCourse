@@ -16,11 +16,13 @@ const double BIG_DIST = 1e100;
 class Blur {
 public:
 	virtual std::pair<double, double> GetXY() = 0;
+	virtual Vector3 GetXYZ() = 0;
 };
 
 class ExpBlur : public Blur {
 public:
 	std::pair<double, double> GetXY();
+	Vector3 GetXYZ();
 };
 
 class Material {
@@ -34,7 +36,7 @@ public:
 	Blur* blur;
 
 	Material();
-	~Material() {}
+	~Material() { delete blur; delete texture; }
 
 	void Input( std::string , std::stringstream& );
 };

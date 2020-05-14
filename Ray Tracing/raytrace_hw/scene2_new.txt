@@ -3,7 +3,7 @@ background
 end
 
 camera
-	O= -6 -6 3.0
+	O= -2 2 0.5
 	N= 0.6 1 -0.6
 	shade_quality= 1
 	drefl_quality= 1
@@ -11,6 +11,11 @@ camera
 	image_W= 1280
 	lens_H= 0.6
 	lens_W= 1.0
+end
+
+light point
+	O= 3 3 3
+	color= 0.2 0.5 1
 end
 
 light sphere 
@@ -38,6 +43,21 @@ primitive sphere
 	refl= 0.3
 	drefl= 0.25
 	blur= exp
+end
+
+
+primitive bezier
+	O1= -1 5 -2
+	O2= -1 5 -1.2
+	P= 0 0.1
+	P= 0.5 0.3
+	P= 1 0.01
+	Cylinder
+	color= 1 1 1
+	texture= blue.bmp
+	diff= 0.4
+	spec= 0.25
+	refl= 0.3
 end
 
 primitive cylinder

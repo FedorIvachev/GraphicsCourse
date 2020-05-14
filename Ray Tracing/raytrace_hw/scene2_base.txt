@@ -3,7 +3,7 @@ background
 end
 
 camera
-	O= -6 -6 3.0
+	O= -2 2 0.5
 	N= 0.6 1 -0.6
 	shade_quality= 1
 	drefl_quality= 1
@@ -13,17 +13,9 @@ camera
 	lens_W= 1.0
 end
 
-light sphere 
-	O= 1 4 -1
-	R= 0.3
-	color= 0 1 0
-end
-
-light square
-	O= 0 2 0
-	Dx= 0.5 2 0
-	Dy= 0 2.5 0
-	color= 1 0 0
+light point
+	O= 3 3 3
+	color= 2 2 2
 end
 
 primitive sphere

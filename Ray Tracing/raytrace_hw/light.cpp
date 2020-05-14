@@ -43,8 +43,27 @@ void SquareLight::Input( std::string var , std::stringstream& fin ) {
 
 double SquareLight::CalnShade( Vector3 C , Primitive* primitive_head , int shade_quality ) {
 	int shade = 0;
-	//NEED TO IMPLEMENT
-	return 0;
+
+	for (int i = -2; i < 2; i++) {
+		for (int j = -2; j < 2; j++) {
+			for (int k = 0; k < shade_quality; k++) {
+				Vector3 V = O - C + Dx * ((ran() + i) / 2) + Dy * ((ran() + j) / 2);
+				double dist = V.Module();
+
+				for (Primitive* now = primitive_head; now != NULL; now = now->GetNext()) {
+
+					CollidePrimitive tmp = now->Collide(C, V);
+
+					if (EPS < (dist - tmp.dist)) {
+						shade++;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	return 1 - ((double)shade) / (16.0 * shade_quality);
 }
 
 Primitive* SquareLight::CreateLightPrimitive()
@@ -65,9 +84,30 @@ void SphereLight::Input( std::string var , std::stringstream& fin ) {
 
 double SphereLight::CalnShade( Vector3 C , Primitive* primitive_head , int shade_quality ) {
 	int shade = 0;
-	//NEED TO IMPLEMENT
 
-	return 0;
+	for (int i = -2; i < 2; i++) {
+		for (int j = -2; j < 2; j++) {
+			for (int m = -2; m < 2; m++) {
+				for (int k = 0; k < shade_quality; k++) {
+					Vector3 P((ran() + i) / 2, (ran() + j) / 2, (ran() + m) / 2);
+					P = P.GetUnitVector();
+					Vector3 V = O - C + P * R;
+					double dist = V.Module();
+					for (Primitive* now = primitive_head; now != NULL; now = now->GetNext()) {
+
+						CollidePrimitive tmp = now->Collide(C, V);
+
+						if (EPS < (dist - tmp.dist)) {
+							shade++;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return 1 - ((double)shade) / (64.0 * shade_quality);
 }
 
 

@@ -7,6 +7,7 @@
 #include<cstdlib>
 #include <algorithm>
 #define ran() ( double( rand() % 32768 ) / 32768 )
+#define M_PI 3.14159
 
 const int BEZIER_MAX_DEGREE = 5;
 const int Combination[BEZIER_MAX_DEGREE + 1][BEZIER_MAX_DEGREE + 1] =
@@ -29,6 +30,18 @@ std::pair<double, double> ExpBlur::GetXY()
 	x = pow(2, x)-1;
 	y = rand();
 	return std::pair<double, double>(x*cos(y),x*sin(y));
+}
+
+Vector3 ExpBlur::GetXYZ()
+{
+	double a = ran();
+	double b = ran();
+	double theta = pow(2, a) - 1;
+	double phi = 2 * M_PI * b;
+	double x = sin(phi) * cos(theta) / 16;
+	double y = sin(phi) * sin(theta) / 16;
+	double z = cos(phi);
+	return Vector3(x, y, z);
 }
 
 Material::Material() {
@@ -367,25 +380,26 @@ CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	//ret1.dist = ret1.dist - (ret1.N * (R1 / boundingCylinder->R)).Dot(ray_V);
 	
 	double min_dist = 1e9;
+	double step_height = 0.2;
 	double tmp_dist;
 	double min_u = 0;
-	for (double u = 0; u - 0.9 < EPS;) {
+	for (double u = 0; u - (1 - step_height) < EPS;) {
 		z_cur = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
 		r_cur = (1 - u) * (1 - u) * R[0] + 2 * u * (1 - u) * R[1] + u * u * R[2];
-		u += 0.1;
+		u += step_height;
 		z_next = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
 		Cylinder* curCylinder = new Cylinder(z_cur, z_next, r_cur);
 		tmp_dist = curCylinder->Collide(ray_O, ray_V).dist;
 		if (tmp_dist < min_dist) {
 			min_dist = tmp_dist;
-			min_u = u - 0.1;
+			min_u = u - step_height;
 		}
 		delete curCylinder;
 	}
 	double u = min_u;
 	z_cur = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
 	r_cur = (1 - u) * (1 - u) * R[0] + 2 * u * (1 - u) * R[1] + u * u * R[2];
-	u += 0.1;
+	u += step_height;
 	z_next = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
 	Cylinder* curCylinder = new Cylinder(z_cur, z_next, r_cur);
 	ret1 = curCylinder->Collide(ray_O, ray_V);
@@ -396,11 +410,19 @@ CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 }
 
 Color Bezier::GetTexture(Vector3 crash_C) {
-	//NEED TO IMPLEMENT
-	double u = 0.5;
-	double v = 0.5;
-	
+	double u = 0;
+	double v = 0;
+	if (((crash_C - O1).Dot(O2 - O1) < EPS && (crash_C - O1).Dot(O2 - O1) > -EPS)
+		|| ((crash_C - O2).Dot(O2 - O1) < EPS && (crash_C - O2).Dot(O2 - O1) > -EPS)) {
 
-	return material->texture->GetSmoothColor( u , v );
+		u = crash_C.x;
+		v = crash_C.y;
+	}
+	else {
+		u = crash_C.x;
+		v = (O2 - O1).Dot(crash_C - O1) / (crash_C - O1).Module();
+	}
+
+	return material->texture->GetSmoothColor(u, v);
 }
 

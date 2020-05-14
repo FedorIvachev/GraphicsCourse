@@ -52,15 +52,38 @@ Color Raytracer::CalnReflection(CollidePrimitive collide_primitive , Vector3 ray
 	ray_V = ray_V.Reflect( collide_primitive.N );
 	Primitive* primitive = collide_primitive.collide_primitive;
 
-	if ( primitive->GetMaterial()->drefl < EPS || dep > MAX_DREFL_DEP )
+	if (primitive->GetMaterial()->drefl < EPS || dep > MAX_DREFL_DEP )
 		return RayTracing( collide_primitive.C , ray_V , dep + 1 , hash ) * primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
 	else
 	{
 		// Implementation
 
-		return RayTracing( collide_primitive.C , ray_V , dep + 1 , hash ) * primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
+		//return RayTracing(collide_primitive.C, ray_V, dep + 1, hash) * primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
 		//NEED TO IMPLEMENT
 		//ADD BLUR
+		//Vector3 blurred = Vector3(primitive->GetMaterial()->blur->GetXYZ().x, primitive->GetMaterial()->blur->GetXYZ().y, primitive->GetMaterial()->blur->GetXYZ().z);
+		//Vector3 blurredXY = Vector3(primitive->GetMaterial()->blur->GetXY().first, primitive->GetMaterial()->blur->GetXY().second, 0);
+		// Adding exponentiontial blur glossy reflection
+		// Based on ray tracing from the ground up book
+
+
+		//Vector3 u = Vector3(0.00424, 1, 0.00764) * w;
+		//u = u.GetUnitVector();
+		//Vector3 v = u * w;
+		//Vector3 sp = primitive->GetMaterial()->blur->GetXYZ();
+		
+
+		ray_V = ray_V.GetUnitVector();
+		Vector3 u = ray_V * collide_primitive.N;
+		Vector3 v = ray_V * u;
+		Vector3 Random_point_in_unit_sphere = primitive->GetMaterial()->blur->GetXYZ();
+
+		// u_ = - a /2 + ksi a 
+		// v_ = - a/2 + ksi' a
+		// ray_V' = ray_V + u_ u + v_ v
+
+		return RayTracing(collide_primitive.C, ray_V + u * Random_point_in_unit_sphere.x + v * Random_point_in_unit_sphere.y, dep + 1, hash)
+			* primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
 	}
 }
 
