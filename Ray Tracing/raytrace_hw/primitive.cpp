@@ -7,7 +7,6 @@
 #include<cstdlib>
 #include <algorithm>
 #define ran() ( double( rand() % 32768 ) / 32768 )
-#define M_PI 3.14159
 
 const int BEZIER_MAX_DEGREE = 5;
 const int Combination[BEZIER_MAX_DEGREE + 1][BEZIER_MAX_DEGREE + 1] =
@@ -37,7 +36,7 @@ Vector3 ExpBlur::GetXYZ()
 	double a = ran();
 	double b = ran();
 	double theta = pow(2, a) - 1;
-	double phi = 2 * M_PI * b;
+	double phi = 2 * PI * b;
 	double x = sin(phi) * cos(theta) / 16;
 	double y = sin(phi) * sin(theta) / 16;
 	double z = cos(phi);
@@ -332,12 +331,14 @@ Color Cylinder::GetTexture(Vector3 crash_C) {
 	if (((crash_C - O1).Dot(O2 - O1) < EPS && (crash_C - O1).Dot(O2 - O1) > -EPS) 
 		|| ((crash_C - O2).Dot(O2 - O1) < EPS && (crash_C - O2).Dot(O2 - O1) > -EPS)) {
 
-		u = crash_C.x;
-		v = crash_C.y;
+		u = crash_C.x - O2.x;
+		v = crash_C.y - O2.y;
 	}
 	else {
-		u = crash_C.x;
-		v = (O2 - O1).Dot(crash_C - O1) / (crash_C - O1).Module();
+		double fi = atan((crash_C.x) / (crash_C.z));
+		u = fi / 2.0 / PI;
+
+		v = (crash_C.y - O1.y + 1) / 2;
 	}
 
 	return material->texture->GetSmoothColor( u , v );
@@ -380,7 +381,7 @@ CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	//ret1.dist = ret1.dist - (ret1.N * (R1 / boundingCylinder->R)).Dot(ray_V);
 	
 	double min_dist = 1e9;
-	double step_height = 0.2;
+	double step_height = 0.05;
 	double tmp_dist;
 	double min_u = 0;
 	for (double u = 0; u - (1 - step_height) < EPS;) {
@@ -410,19 +411,21 @@ CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 }
 
 Color Bezier::GetTexture(Vector3 crash_C) {
+	// chabuduo ...
 	double u = 0;
 	double v = 0;
 	if (((crash_C - O1).Dot(O2 - O1) < EPS && (crash_C - O1).Dot(O2 - O1) > -EPS)
 		|| ((crash_C - O2).Dot(O2 - O1) < EPS && (crash_C - O2).Dot(O2 - O1) > -EPS)) {
 
-		u = crash_C.x;
-		v = crash_C.y;
+		u = (1 + crash_C.x - O1.x) / 2;
+		v = (1 + crash_C.y - O1.y) / 2;
 	}
 	else {
-		u = crash_C.x;
-		v = (O2 - O1).Dot(crash_C - O1) / (crash_C - O1).Module();
+		double fi = atan((crash_C.x) / (crash_C.z));
+		u = fi / 2.0 / PI;
+
+		v = (crash_C.y - O1.y + 1) / 2;
 	}
 
 	return material->texture->GetSmoothColor(u, v);
 }
-

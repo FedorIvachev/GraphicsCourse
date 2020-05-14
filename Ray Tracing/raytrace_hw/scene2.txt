@@ -19,13 +19,6 @@ light sphere
 	color= 0 1 0
 end
 
-light square
-	O= 0 2 0
-	Dx= 0.5 2 0
-	Dy= 0 2.5 0
-	color= 1 0 0
-end
-
 primitive sphere
 	O= 0 6 -1.5
 	R= 0.5

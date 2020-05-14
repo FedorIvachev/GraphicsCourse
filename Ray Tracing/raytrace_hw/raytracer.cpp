@@ -56,6 +56,8 @@ Color Raytracer::CalnReflection(CollidePrimitive collide_primitive , Vector3 ray
 		return RayTracing( collide_primitive.C , ray_V , dep + 1 , hash ) * primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
 	else
 	{
+		//return RayTracing(collide_primitive.C, ray_V, dep + 1, hash) * primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
+
 		// Implementation
 
 		//return RayTracing(collide_primitive.C, ray_V, dep + 1, hash) * primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
