@@ -9,9 +9,11 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform float scale;
+uniform float u_time;
+
 
 void main()
 {
     gl_Position = projection * view * model * vec4(position * scale, 1.0f);
-    TexCoords = vec2(texCoord.x, 1.0f - texCoord.y);
+    TexCoords = vec2(texCoord.x + sin(u_time * 0.05), 1.0f - texCoord.y);
 }

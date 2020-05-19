@@ -270,6 +270,7 @@ int main()
         GLint waterprojLoc = glGetUniformLocation(waterShader.Program, "projection");
         GLint waterscaleLoc = glGetUniformLocation(waterShader.Program, "scale");
         GLint color_location = glGetUniformLocation(waterShader.Program, "my_color");
+        GLint watertimeLoc = glGetUniformLocation(waterShader.Program, "u_time");
 
         glDepthMask(GL_TRUE);
         view = camera.GetViewMatrix();
@@ -280,6 +281,7 @@ int main()
         glUniformMatrix4fv(waterviewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniform1f(waterscaleLoc, scale * 2);
         glUniform4f(color_location, 1.0, 1.0, 1.0, 0.8);
+        glUniform1f(watertimeLoc, currentFrame);
         glBindVertexArray(skyboxVAO);
         glBindTexture(GL_TEXTURE_2D, waterTexture);
         glDrawArrays(GL_TRIANGLES, 30, 6);
