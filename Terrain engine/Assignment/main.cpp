@@ -20,7 +20,6 @@
 // Other includes
 #include "shader.h"
 #include "camera.h"
-#include <vector>
 
 
 // Function prototypes
@@ -29,7 +28,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void do_movement();
-GLuint loadTexture(const char* path, GLboolean alpha);
+GLuint loadTexture(const char* path);
+GLuint loadWaterTexture(const char* path);
+
 
 // Window dimensions
 GLuint WIDTH = 800, HEIGHT = 600;
@@ -40,6 +41,7 @@ GLfloat lastX  =  WIDTH  / 2.0;
 GLfloat lastY  =  HEIGHT / 2.0;
 bool    keys[1024];
 bool firstMouse = true;
+GLfloat scale = 30.0;
 
 // Deltatime
 GLfloat deltaTime = 0.0f;    // Time between current frame and last frame
@@ -78,10 +80,16 @@ int main()
     }
     
     
-    
+
+    // Setup some OpenGL options
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Build and compile our shader program
     Shader skyboxShader("skybox.vert.glsl", "skybox.frag.glsl");
     Shader mainShader("main.vert.glsl", "main.frag.glsl");
+    Shader waterShader("water.vert.glsl", "water.frag.glsl");
 
     // Load CubeMap
 
@@ -100,21 +108,21 @@ int main()
         -1.0f,  1.0f, -1.0f, 0.0f,  1.0f,
         -1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
         -1.0f, -1.0f,  1.0f,  1.0f,  0.0f,
-
+                    
          1.0f, -1.0f, -1.0f,  1.0f,  0.0f, // ++
          1.0f, -1.0f,  1.0f,  0.0f,  0.0f,
          1.0f,  1.0f,  1.0f,  0.0f,  1.0f,
          1.0f,  1.0f,  1.0f,  0.0f,  1.0f,
          1.0f,  1.0f, -1.0f,  1.0f,  1.0f,
          1.0f, -1.0f, -1.0f,  1.0f,  0.0f,
-
+                    
         -1.0f, -1.0f,  1.0f, 0.0f,  0.0f, // ++
         -1.0f,  1.0f,  1.0f, 0.0f,  1.0f,
          1.0f,  1.0f,  1.0f, 1.0f,  1.0f,
          1.0f,  1.0f,  1.0f, 1.0f,  1.0f,
          1.0f, -1.0f,  1.0f, 1.0f,  0.0f,
         -1.0f, -1.0f,  1.0f, 0.0f,  0.0f,
-
+                    
         -1.0f,  1.0f, -1.0f,  0.0f,  1.0f, // ++
          1.0f,  1.0f, -1.0f, 1.0f,  1.0f,
          1.0f,  1.0f,  1.0f, 1.0f,  0.0f,
@@ -122,13 +130,19 @@ int main()
         -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,
         -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,
 
-        -1.0f, -1.0f, -1.0f,  1.0f,  0.0f,
-        -1.0f, -1.0f,  1.0f, 0.0f,  0.0f,
-         1.0f, -1.0f, -1.0f, 0.0f,  1.0f,
-         1.0f, -1.0f, -1.0f, 0.0f,  1.0f,
-        -1.0f, -1.0f,  1.0f,  1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f,   1.0f,  0.0f
+        -10.0f, 0.0f, -10.0f,  0.0f,  0.0f,
+        -10.0f, 0.0f,  10.0f, 0.0f,  100.0f,
+         10.0f, 0.0f, -10.0f, 100.0f,  0.0f,
+         10.0f, 0.0f, -10.0f, 100.0f,  0.0f,
+        -10.0f, 0.0f,  10.0f,  0.0f,  100.0f,
+         10.0f, 0.0f,  10.0f, 100.0f,  100.0f
     };
+    GLfloat skyboxVerticesReversed[180];
+    memcpy(skyboxVerticesReversed, skyboxVertices, sizeof(skyboxVerticesReversed));
+    // Change init to a better-looking style
+    for (int i = 1; i < sizeof(skyboxVerticesReversed) / sizeof(*skyboxVerticesReversed); i+=5) {
+        skyboxVerticesReversed[i] = skyboxVertices[i] * (-1.0f);
+    }
     // Setup skybox VAO
     GLuint skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
@@ -142,11 +156,25 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glBindVertexArray(0);
 
-    GLuint frontTexture = loadTexture("data/SkyBox/SkyBox0.bmp", 1);
-    GLuint rightTexture = loadTexture("data/SkyBox/SkyBox1.bmp", 1);
-    GLuint backTexture = loadTexture("data/SkyBox/SkyBox2.bmp", 1);
-    GLuint leftTexture = loadTexture("data/SkyBox/SkyBox3.bmp", 1);
-    GLuint topTexture = loadTexture("data/SkyBox/SkyBox4.bmp", 1);
+    // Setup reversed skybox VAO
+    GLuint reversedskyboxVAO, reversedskyboxVBO;
+    glGenVertexArrays(1, &reversedskyboxVAO);
+    glGenBuffers(1, &reversedskyboxVBO);
+    glBindVertexArray(reversedskyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, reversedskyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVerticesReversed), &skyboxVerticesReversed, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glBindVertexArray(0);
+
+    GLuint frontTexture = loadTexture("data/SkyBox/SkyBox0.bmp");
+    GLuint rightTexture = loadTexture("data/SkyBox/SkyBox1.bmp");
+    GLuint backTexture = loadTexture("data/SkyBox/SkyBox2.bmp");
+    GLuint leftTexture = loadTexture("data/SkyBox/SkyBox3.bmp");
+    GLuint topTexture = loadTexture("data/SkyBox/SkyBox4.bmp");
+    GLuint waterTexture = loadWaterTexture("data/SkyBox/SkyBox5.bmp");
     
     // Game loop
     while (!glfwWindowShouldClose(window))
@@ -169,26 +197,29 @@ int main()
         // Camera/View transformation
         // Projection
         glm::mat4 projection(1);
+        glm::mat4 view(1);
+        glm::mat4 model(1);
+
+        model = glm::translate(model, glm::vec3(0.0f, 0.9f * scale, 0.0f));
         projection = glm::perspective(glm::radians(camera.Zoom), (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
         // Get the uniform locations
         GLint modelLoc = glGetUniformLocation(skyboxShader.Program, "model");
         GLint viewLoc = glGetUniformLocation(skyboxShader.Program, "view");
         GLint projLoc = glGetUniformLocation(skyboxShader.Program, "projection");
+        GLint scaleLoc = glGetUniformLocation(skyboxShader.Program, "scale");
         // Pass the matrices to the shader
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        glm::mat4 model(1);
-        //model = glm::translate(model, glm::vec3(0.0f, 0.0f, -1.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
         // Draw skybox as last
         
 
         glDepthMask(GL_FALSE);
-        glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));	// Remove any translation component of the view matrix
-        viewLoc = glGetUniformLocation(skyboxShader.Program, "view");
+        view = glm::mat4(glm::mat3(camera.GetViewMatrix()));	// Remove any translation component of the view matrix
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         // skybox cube
+        glUniform1f(scaleLoc, scale);
 
         glBindVertexArray(skyboxVAO);
         glBindTexture(GL_TEXTURE_2D, backTexture);
@@ -205,6 +236,53 @@ int main()
         glBindVertexArray(skyboxVAO);
         glBindTexture(GL_TEXTURE_2D, topTexture);
         glDrawArrays(GL_TRIANGLES, 24, 6);
+
+        // draw reversed skybox
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(0.0f, -1.1f * scale, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        glBindVertexArray(0);
+
+        glBindVertexArray(reversedskyboxVAO);
+        glBindTexture(GL_TEXTURE_2D, backTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(reversedskyboxVAO);
+        glBindTexture(GL_TEXTURE_2D, leftTexture);
+        glDrawArrays(GL_TRIANGLES, 6, 6);
+        glBindVertexArray(reversedskyboxVAO);
+        glBindTexture(GL_TEXTURE_2D, rightTexture);
+        glDrawArrays(GL_TRIANGLES, 12, 6);
+        glBindVertexArray(reversedskyboxVAO);
+        glBindTexture(GL_TEXTURE_2D, frontTexture);
+        glDrawArrays(GL_TRIANGLES, 18, 6);
+        glBindVertexArray(reversedskyboxVAO);
+        glBindTexture(GL_TEXTURE_2D, topTexture);
+        glDrawArrays(GL_TRIANGLES, 24, 6);
+        
+        waterShader.Use();
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f * scale, 0.0f));
+        GLint watermodelLoc = glGetUniformLocation(waterShader.Program, "model");
+        GLint waterviewLoc = glGetUniformLocation(waterShader.Program, "view");
+        GLint waterprojLoc = glGetUniformLocation(waterShader.Program, "projection");
+        GLint waterscaleLoc = glGetUniformLocation(waterShader.Program, "scale");
+        GLint color_location = glGetUniformLocation(waterShader.Program, "my_color");
+
+        glDepthMask(GL_TRUE);
+        view = camera.GetViewMatrix();
+
+        // Pass the matrices to the shader
+        glUniformMatrix4fv(waterprojLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(watermodelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(waterviewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniform1f(waterscaleLoc, scale * 2);
+        glUniform4f(color_location, 1.0, 1.0, 1.0, 0.8);
+        glBindVertexArray(skyboxVAO);
+        glBindTexture(GL_TEXTURE_2D, waterTexture);
+        glDrawArrays(GL_TRIANGLES, 30, 6);
 
 
         
@@ -283,7 +361,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     camera.ProcessMouseScroll(yoffset);
 }
 
-GLuint loadTexture(const char* path, GLboolean alpha)
+GLuint loadTexture(const char* path)
 {
     //Generate texture ID and load texture data
     GLuint textureID;
@@ -296,11 +374,38 @@ GLuint loadTexture(const char* path, GLboolean alpha)
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 
-    glGenerateMipmap(GL_TEXTURE_2D);
 
     // Parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, alpha ? GL_CLAMP_TO_EDGE : GL_REPEAT);    // Use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes value from next repeat
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, alpha ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);    // Use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes value from next repeat
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    SOIL_free_image_data(image);
+    return textureID;
+}
+
+GLuint loadWaterTexture(const char* path)
+{
+    //Generate texture ID and load texture data
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    int width, height;
+    unsigned char* image = SOIL_load_image(path, &width, &height, 0, SOIL_LOAD_RGBA);
+
+    // Assign texture to ID
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+
+    // Parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);    // Use GL_CLAMP_TO_EDGE to prevent semi-transparent borders. Due to interpolation it takes value from next repeat
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 

@@ -35,5 +35,7 @@
     <None Include="skybox.vert.glsl" />
     <None Include="main.frag.glsl" />
     <None Include="main.vert.glsl" />
+    <None Include="water.frag.glsl" />
+    <None Include="water.vert.glsl" />
   </ItemGroup>
 </Project>
