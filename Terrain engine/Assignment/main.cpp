@@ -177,7 +177,7 @@ int main()
     GLuint leftTexture = loadTexture("data/SkyBox/SkyBox3.bmp");
     GLuint topTexture = loadTexture("data/SkyBox/SkyBox4.bmp");
     GLuint waterTexture = loadWaterTexture("data/SkyBox/SkyBox5.bmp");
-    GLuint terrainTexture = loadTerrainTexture("data/terrain-texture3.bmp");
+    GLuint terrainTexture = loadTerrainTexture("data/terrain-texture.bmp");
     GLuint detailsTexture = loadTerrainTexture("data/detail.bmp");
 
     // load terrain (need to put in a class
@@ -195,7 +195,7 @@ int main()
             /* Normalize height to [-1, 1] */
             h = h / 127.5;
             heights_init.push_back(x * 1.0 / depthimage_height);
-            heights_init.push_back(h / scale);
+            heights_init.push_back(h / scale * 3.0);
             heights_init.push_back(z * 1.0 / depthimage_width);
 
             // Texture coords
@@ -391,7 +391,7 @@ int main()
 
         terrainShader.Use();
         model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f * scale, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, -0.053f * scale, 0.0f));
         GLint terrainmodelLoc = glGetUniformLocation(terrainShader.Program, "model");
         GLint terrainviewLoc = glGetUniformLocation(terrainShader.Program, "view");
         GLint terrainprojLoc = glGetUniformLocation(terrainShader.Program, "projection");
@@ -405,7 +405,12 @@ int main()
         glUniformMatrix4fv(terrainviewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniform1f(terrainscaleLoc, scale);
         glBindVertexArray(terrainVAO);
-        // Get the uniform variables location. You've probably already done that before...
+
+        //float plane[4] = { 0.0f, -1.0f, 0.0f, 0.1f };
+        //glUniform4fv(glGetUniformLocation(terrainShader.Program, "ClipPlane"), 4, plane);
+        //glEnable(GL_CLIP_DISTANCE0);
+
+
         GLint terrainTexLocation = glGetUniformLocation(terrainShader.Program, "texture0");
         GLint detailsTexLocation = glGetUniformLocation(terrainShader.Program, "texture1");
         glUniform1i(terrainTexLocation, 0);
@@ -417,14 +422,13 @@ int main()
         glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
         glBindTexture(GL_TEXTURE_2D, detailsTexture);
 
-
         glDrawArrays(GL_TRIANGLES, 0, heights.size());
         glDisable(GL_TEXTURE_2D);
         glActiveTexture(GL_TEXTURE1);
         glDisable(GL_TEXTURE_2D);
         glActiveTexture(GL_TEXTURE0);
         glDisable(GL_TEXTURE_2D);
-        
+        //glDisable(GL_CLIP_DISTANCE0);
 
 
         
