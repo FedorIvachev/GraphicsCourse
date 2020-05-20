@@ -30,6 +30,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void do_movement();
 GLuint loadTexture(const char* path);
 GLuint loadWaterTexture(const char* path);
+GLuint loadTerrainTexture(const char* path);
 
 
 // Window dimensions
@@ -176,7 +177,8 @@ int main()
     GLuint leftTexture = loadTexture("data/SkyBox/SkyBox3.bmp");
     GLuint topTexture = loadTexture("data/SkyBox/SkyBox4.bmp");
     GLuint waterTexture = loadWaterTexture("data/SkyBox/SkyBox5.bmp");
-    GLuint terrainTexture = loadTexture("data/terrain-texture3.bmp");
+    GLuint terrainTexture = loadTerrainTexture("data/terrain-texture3.bmp");
+    GLuint detailsTexture = loadTerrainTexture("data/detail.bmp");
 
     // load terrain (need to put in a class
 
@@ -184,6 +186,8 @@ int main()
     unsigned char *heightimage = SOIL_load_image("data/heightmap.bmp", &depthimage_width, &depthimage_height, nullptr, SOIL_LOAD_L);
     std::vector <float> heights_init{};
     std::vector <float> heights{};
+    std::vector <float> details{};
+
 
     for (int x = 0; x < depthimage_height; x++) {
         for (int z = 0; z < depthimage_width; z++) {
@@ -202,6 +206,8 @@ int main()
         }
     }
 
+    SOIL_free_image_data(heightimage);
+
     for (int x = 0; x < depthimage_height - 1; x++) {
         for (int z = 0; z < depthimage_width - 1; z++) {
             heights.push_back(heights_init[(x * depthimage_width + z) * 5]);
@@ -209,44 +215,87 @@ int main()
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 3]);
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 4]);
-
+            heights.push_back(0.0f);
+            heights.push_back(0.0f);
 
             heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5]);
             heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 1]);
             heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 2]);
             heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 3]);
             heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 4]);
-
-
-            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
-            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
-            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
-            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 3]);
-            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 4]);
-
+            heights.push_back(0.0f);
+            heights.push_back(1.0f);
 
             heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
             heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
             heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
             heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 3]);
             heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 4]);
+            heights.push_back(1.0f);
+            heights.push_back(1.0f);
 
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 3]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 4]);
+            heights.push_back(1.0f);
+            heights.push_back(1.0f);
 
             heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5]);
             heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 1]);
             heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 2]);
             heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 3]);
             heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 4]);
+            heights.push_back(1.0f);
+            heights.push_back(0.0f);
 
             heights.push_back(heights_init[(x * depthimage_width + z) * 5]);
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 1]);
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 3]);
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 4]);
+            heights.push_back(0.0f);
+            heights.push_back(0.0f);
 
+            // add details textures 
+            details.push_back(heights_init[(x * depthimage_width + z) * 5]);
+            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 1]);
+            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
+            details.push_back(0.0f);
+            details.push_back(0.0f);
+            
+            details.push_back(heights_init[((x + 1) * depthimage_width + z) * 5]);
+            details.push_back(heights_init[((x + 1) * depthimage_width + z) * 5 + 1]);
+            details.push_back(heights_init[((x + 1) * depthimage_width + z) * 5 + 2]);
+            details.push_back(0.0f);
+            details.push_back(1.0f);
+            
+            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
+            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
+            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
+            details.push_back(1.0f);
+            details.push_back(1.0f);
+            
+            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
+            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
+            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
+            details.push_back(1.0f);
+            details.push_back(1.0f);
+            
+            details.push_back(heights_init[(x * depthimage_width + z + 1) * 5]);
+            details.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 1]);
+            details.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 2]);
+            details.push_back(1.0f);
+            details.push_back(0.0f);
+            
+            details.push_back(heights_init[(x * depthimage_width + z) * 5]);
+            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 1]);
+            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
+            details.push_back(0.0f);
+            details.push_back(0.0f);
         }
     }
-    SOIL_free_image_data(heightimage);
 
     // setup terrain VAO and VBO
     GLuint terrainVAO, terrainVBO;
@@ -256,12 +305,25 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
     glBufferData(GL_ARRAY_BUFFER, heights.size() * sizeof(float), &heights[0], GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)(5 * sizeof(GLfloat)));
+    glBindVertexArray(0);
+
+    // setup details VAO and VBO
+    GLuint detailsVAO, detailsVBO;
+    glGenVertexArrays(1, &detailsVAO);
+    glGenBuffers(1, &detailsVBO);
+    glBindVertexArray(detailsVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, detailsVBO);
+    glBufferData(GL_ARRAY_BUFFER, details.size() * sizeof(float), &details[0], GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glBindVertexArray(0);
-
-
 
     
     // Game loop
@@ -395,9 +457,25 @@ int main()
         glUniformMatrix4fv(terrainviewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniform1f(terrainscaleLoc, scale);
         glBindVertexArray(terrainVAO);
-        glBindTexture(GL_TEXTURE_2D, terrainTexture);
-        glDrawArrays(GL_TRIANGLES, 0, heights.size());
+        // Get the uniform variables location. You've probably already done that before...
+        GLint terrainTexLocation = glGetUniformLocation(terrainShader.Program, "texture0");
+        GLint detailsTexLocation = glGetUniformLocation(terrainShader.Program, "texture1");
+        glUniform1i(terrainTexLocation, 0);
+        glUniform1i(detailsTexLocation, 1);
 
+        glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
+        glBindTexture(GL_TEXTURE_2D, terrainTexture);
+
+        glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
+        glBindTexture(GL_TEXTURE_2D, detailsTexture);
+
+
+        glDrawArrays(GL_TRIANGLES, 0, heights.size());
+        glDisable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE1);
+        glDisable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE0);
+        glDisable(GL_TEXTURE_2D);
         
 
 
@@ -528,3 +606,11 @@ GLuint loadWaterTexture(const char* path)
     return textureID;
 }
 
+
+
+GLuint loadTerrainTexture(const char* path)
+{
+    GLuint image = SOIL_load_OGL_texture(path, SOIL_LOAD_AUTO,
+        SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MULTIPLY_ALPHA);
+    return image;
+}
