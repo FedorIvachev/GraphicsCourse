@@ -85,7 +85,7 @@ int main()
     // Setup some OpenGL options
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE_MINUS_SRC1_COLOR, GL_ONE_MINUS_SRC_ALPHA);
 
     // Build and compile our shader program
     Shader skyboxShader("skybox.vert.glsl", "skybox.frag.glsl");
@@ -194,6 +194,7 @@ int main()
 
             /* Normalize height to [-1, 1] */
             h = h / 127.5;
+            h = (h < 0.41) ? 0.41 : h;
             heights_init.push_back(x * 1.0 / depthimage_height);
             heights_init.push_back(h / scale * 3.0);
             heights_init.push_back(z * 1.0 / depthimage_width);
@@ -259,6 +260,12 @@ int main()
         }
     }
 
+    std::vector <float> reversedheights(heights);
+    for (int i = 1; i < reversedheights.size(); i+=7) {
+        reversedheights[i] *= -1;
+    }
+
+
     // setup terrain VAO and VBO
     GLuint terrainVAO, terrainVBO;
     glGenVertexArrays(1, &terrainVAO);
@@ -266,6 +273,21 @@ int main()
     glBindVertexArray(terrainVAO);
     glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
     glBufferData(GL_ARRAY_BUFFER, heights.size() * sizeof(float), &heights[0], GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)(5 * sizeof(GLfloat)));
+    glBindVertexArray(0);
+
+    // setup reversed terrain VAO and VBO
+    GLuint reversedterrainVAO, reversedterrainVBO;
+    glGenVertexArrays(1, &reversedterrainVAO);
+    glGenBuffers(1, &reversedterrainVBO);
+    glBindVertexArray(reversedterrainVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, reversedterrainVBO);
+    glBufferData(GL_ARRAY_BUFFER, reversedheights.size() * sizeof(float), &reversedheights[0], GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(1);
@@ -360,32 +382,8 @@ int main()
         glDrawArrays(GL_TRIANGLES, 24, 6);
         
 
-        // render water
-
-        waterShader.Use();
-
-        model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f * scale, 0.0f));
-        GLint watermodelLoc = glGetUniformLocation(waterShader.Program, "model");
-        GLint waterviewLoc = glGetUniformLocation(waterShader.Program, "view");
-        GLint waterprojLoc = glGetUniformLocation(waterShader.Program, "projection");
-        GLint waterscaleLoc = glGetUniformLocation(waterShader.Program, "scale");
-        GLint color_location = glGetUniformLocation(waterShader.Program, "my_color");
-        GLint watertimeLoc = glGetUniformLocation(waterShader.Program, "u_time");
-
         glDepthMask(GL_TRUE);
-        view = camera.GetViewMatrix();
 
-        // Pass the matrices to the shader
-        glUniformMatrix4fv(waterprojLoc, 1, GL_FALSE, glm::value_ptr(projection));
-        glUniformMatrix4fv(watermodelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(waterviewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniform1f(waterscaleLoc, scale * 2);
-        glUniform4f(color_location, 1.0, 1.0, 1.0, 0.8);
-        glUniform1f(watertimeLoc, currentFrame);
-        glBindVertexArray(skyboxVAO);
-        glBindTexture(GL_TEXTURE_2D, waterTexture);
-        glDrawArrays(GL_TRIANGLES, 30, 6);
 
         // Render terrain // btw it should be rendered before the water so the reflections are calculated
 
@@ -396,7 +394,8 @@ int main()
         GLint terrainviewLoc = glGetUniformLocation(terrainShader.Program, "view");
         GLint terrainprojLoc = glGetUniformLocation(terrainShader.Program, "projection");
         GLint terrainscaleLoc = glGetUniformLocation(terrainShader.Program, "scale");
-        
+        GLint revLoc = glGetUniformLocation(terrainShader.Program, "rev");
+
         view = camera.GetViewMatrix();
 
         // Pass the matrices to the shader
@@ -404,12 +403,12 @@ int main()
         glUniformMatrix4fv(terrainmodelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(terrainviewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniform1f(terrainscaleLoc, scale);
+        glUniform1i(revLoc, 0);
         glBindVertexArray(terrainVAO);
 
         //float plane[4] = { 0.0f, -1.0f, 0.0f, 0.1f };
         //glUniform4fv(glGetUniformLocation(terrainShader.Program, "ClipPlane"), 4, plane);
         //glEnable(GL_CLIP_DISTANCE0);
-
 
         GLint terrainTexLocation = glGetUniformLocation(terrainShader.Program, "texture0");
         GLint detailsTexLocation = glGetUniformLocation(terrainShader.Program, "texture1");
@@ -430,6 +429,55 @@ int main()
         glDisable(GL_TEXTURE_2D);
         //glDisable(GL_CLIP_DISTANCE0);
 
+
+        // draw reversed terrain
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(0.0f, 0.04f * scale, 0.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(revLoc, 1);
+
+        glBindVertexArray(reversedterrainVAO);
+
+        glActiveTexture(GL_TEXTURE0 + 0); // Texture unit 0
+        glBindTexture(GL_TEXTURE_2D, terrainTexture);
+
+        glActiveTexture(GL_TEXTURE0 + 1); // Texture unit 1
+        glBindTexture(GL_TEXTURE_2D, detailsTexture);
+
+        glDrawArrays(GL_TRIANGLES, 0, reversedheights.size());
+        glDisable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE1);
+        glDisable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE0);
+        glDisable(GL_TEXTURE_2D);
+
+
+        // render water
+
+        waterShader.Use();
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f * scale, 0.0f));
+        GLint watermodelLoc = glGetUniformLocation(waterShader.Program, "model");
+        GLint waterviewLoc = glGetUniformLocation(waterShader.Program, "view");
+        GLint waterprojLoc = glGetUniformLocation(waterShader.Program, "projection");
+        GLint waterscaleLoc = glGetUniformLocation(waterShader.Program, "scale");
+        GLint color_location = glGetUniformLocation(waterShader.Program, "my_color");
+        GLint watertimeLoc = glGetUniformLocation(waterShader.Program, "u_time");
+
+        view = camera.GetViewMatrix();
+
+        // Pass the matrices to the shader
+        glUniformMatrix4fv(waterprojLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(watermodelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(waterviewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniform1f(waterscaleLoc, scale * 2);
+        glUniform4f(color_location, 1.0, 1.0, 1.0, 0.8);
+        glUniform1f(watertimeLoc, currentFrame);
+        glBindVertexArray(skyboxVAO);
+        glBindTexture(GL_TEXTURE_2D, waterTexture);
+        glDrawArrays(GL_TRIANGLES, 30, 6);
 
         
         // Swap the screen buffers
