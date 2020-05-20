@@ -90,6 +90,7 @@ int main()
     Shader skyboxShader("skybox.vert.glsl", "skybox.frag.glsl");
     Shader mainShader("main.vert.glsl", "main.frag.glsl");
     Shader waterShader("water.vert.glsl", "water.frag.glsl");
+    Shader terrainShader("terrain.vert.glsl", "terrain.frag.glsl");
 
     // Load CubeMap
 
@@ -175,6 +176,87 @@ int main()
     GLuint leftTexture = loadTexture("data/SkyBox/SkyBox3.bmp");
     GLuint topTexture = loadTexture("data/SkyBox/SkyBox4.bmp");
     GLuint waterTexture = loadWaterTexture("data/SkyBox/SkyBox5.bmp");
+    GLuint terrainTexture = loadTexture("data/terrain-texture3.bmp");
+
+    // load terrain (need to put in a class
+
+    int depthimage_width, depthimage_height;
+    unsigned char *heightimage = SOIL_load_image("data/heightmap.bmp", &depthimage_width, &depthimage_height, nullptr, SOIL_LOAD_L);
+    std::vector <float> heights_init{};
+    std::vector <float> heights{};
+
+    for (int x = 0; x < depthimage_width; x++) {
+        for (int z = 0; z < depthimage_height; z++) {
+            float h = heightimage[z * depthimage_width + x]; // ?????
+
+            /* Normalize height to [-1, 1] */
+            h = h / 127.5;
+            heights_init.push_back(h / scale);
+        }
+    }
+
+    for (int x = 0; x < depthimage_height - 1; x++) {
+        for (int z = 0; z < depthimage_width - 1; z++) {
+            float h = heights_init[z * depthimage_width + x];
+            heights.push_back(x * 1.0 / depthimage_width);
+            heights.push_back(h);
+            heights.push_back(z * 1.0 / depthimage_width);
+            heights.push_back(0.0f);
+            heights.push_back(0.0f);
+
+            h = heights_init[z * depthimage_width + x + 2]; // ?
+            heights.push_back((x + 1.0) / depthimage_width);
+            heights.push_back(h);
+            heights.push_back(z * 1.0 / depthimage_width);
+            heights.push_back(0.0f);
+            heights.push_back(1.0f);
+
+            h = heights_init[z * depthimage_width + x + 3]; // ?
+            heights.push_back((x + 1.0) / depthimage_width);
+            heights.push_back(h);
+            heights.push_back((z + 1.0) * 1.0 / depthimage_width);
+            heights.push_back(1.0f);
+            heights.push_back(1.0f);
+
+            h = heights_init[z * depthimage_width + x + 3]; // ?
+            heights.push_back((x + 1.0) / depthimage_width);
+            heights.push_back(h);
+            heights.push_back((z + 1.0) * 1.0 / depthimage_width);
+            heights.push_back(1.0f);
+            heights.push_back(1.0f);
+
+            h = heights_init[z * depthimage_width + x + 1];
+            heights.push_back(x * 1.0 / depthimage_width);
+            heights.push_back(h);
+            heights.push_back((z + 1.0) / depthimage_width);
+            heights.push_back(1.0f);
+            heights.push_back(0.0f);
+
+            h = heights_init[z * depthimage_width + x];
+            heights.push_back(x * 1.0 / depthimage_width);
+            heights.push_back(h);
+            heights.push_back(z * 1.0 / depthimage_width);
+            heights.push_back(0.0f);
+            heights.push_back(0.0f);
+        }
+    }
+    SOIL_free_image_data(heightimage);
+
+    // setup terrain VAO and VBO
+    GLuint terrainVAO, terrainVBO;
+    glGenVertexArrays(1, &terrainVAO);
+    glGenBuffers(1, &terrainVBO);
+    glBindVertexArray(terrainVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
+    glBufferData(GL_ARRAY_BUFFER, heights.size() * sizeof(float), &heights[0], GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glBindVertexArray(0);
+
+
+
     
     // Game loop
     while (!glfwWindowShouldClose(window))
@@ -261,6 +343,9 @@ int main()
         glBindTexture(GL_TEXTURE_2D, topTexture);
         glDrawArrays(GL_TRIANGLES, 24, 6);
         
+
+        // render water
+
         waterShader.Use();
 
         model = glm::mat4(1);
@@ -286,6 +371,26 @@ int main()
         glBindTexture(GL_TEXTURE_2D, waterTexture);
         glDrawArrays(GL_TRIANGLES, 30, 6);
 
+        // Render terrain // btw it should be rendered before the water so the reflections are calculated
+
+        terrainShader.Use();
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f * scale, 0.0f));
+        GLint terrainmodelLoc = glGetUniformLocation(terrainShader.Program, "model");
+        GLint terrainviewLoc = glGetUniformLocation(terrainShader.Program, "view");
+        GLint terrainprojLoc = glGetUniformLocation(terrainShader.Program, "projection");
+        GLint terrainscaleLoc = glGetUniformLocation(terrainShader.Program, "scale");
+        
+        view = camera.GetViewMatrix();
+
+        // Pass the matrices to the shader
+        glUniformMatrix4fv(terrainprojLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(terrainmodelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(terrainviewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniform1f(terrainscaleLoc, scale);
+        glBindVertexArray(terrainVAO);
+        glBindTexture(GL_TEXTURE_2D, terrainTexture);
+        glDrawArrays(GL_TRIANGLES, 0, heights.size());
 
         
 
@@ -416,3 +521,4 @@ GLuint loadWaterTexture(const char* path)
     SOIL_free_image_data(image);
     return textureID;
 }
+

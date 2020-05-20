@@ -37,5 +37,7 @@
     <None Include="main.vert.glsl" />
     <None Include="water.frag.glsl" />
     <None Include="water.vert.glsl" />
+    <None Include="terrain.frag.glsl" />
+    <None Include="terrain.vert.glsl" />
   </ItemGroup>
 </Project>
