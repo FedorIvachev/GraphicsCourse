@@ -185,59 +185,65 @@ int main()
     std::vector <float> heights_init{};
     std::vector <float> heights{};
 
-    for (int x = 0; x < depthimage_width; x++) {
-        for (int z = 0; z < depthimage_height; z++) {
-            float h = heightimage[z * depthimage_width + x]; // ?????
+    for (int x = 0; x < depthimage_height; x++) {
+        for (int z = 0; z < depthimage_width; z++) {
+            float h = heightimage[x * depthimage_width + z]; // ?????
 
             /* Normalize height to [-1, 1] */
             h = h / 127.5;
+            heights_init.push_back(x * 1.0 / depthimage_height);
             heights_init.push_back(h / scale);
+            heights_init.push_back(z * 1.0 / depthimage_width);
+
+            // Texture coords
+            heights_init.push_back(x * 1.0 / depthimage_height);
+            heights_init.push_back(z * 1.0 / depthimage_width);
+
         }
     }
 
     for (int x = 0; x < depthimage_height - 1; x++) {
         for (int z = 0; z < depthimage_width - 1; z++) {
-            float h = heights_init[z * depthimage_width + x];
-            heights.push_back(x * 1.0 / depthimage_width);
-            heights.push_back(h);
-            heights.push_back(z * 1.0 / depthimage_width);
-            heights.push_back(0.0f);
-            heights.push_back(0.0f);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 1]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 3]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 4]);
 
-            h = heights_init[z * depthimage_width + x + 2]; // ?
-            heights.push_back((x + 1.0) / depthimage_width);
-            heights.push_back(h);
-            heights.push_back(z * 1.0 / depthimage_width);
-            heights.push_back(0.0f);
-            heights.push_back(1.0f);
 
-            h = heights_init[z * depthimage_width + x + 3]; // ?
-            heights.push_back((x + 1.0) / depthimage_width);
-            heights.push_back(h);
-            heights.push_back((z + 1.0) * 1.0 / depthimage_width);
-            heights.push_back(1.0f);
-            heights.push_back(1.0f);
+            heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5]);
+            heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 1]);
+            heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 2]);
+            heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 3]);
+            heights.push_back(heights_init[((x+1) * depthimage_width + z) * 5 + 4]);
 
-            h = heights_init[z * depthimage_width + x + 3]; // ?
-            heights.push_back((x + 1.0) / depthimage_width);
-            heights.push_back(h);
-            heights.push_back((z + 1.0) * 1.0 / depthimage_width);
-            heights.push_back(1.0f);
-            heights.push_back(1.0f);
 
-            h = heights_init[z * depthimage_width + x + 1];
-            heights.push_back(x * 1.0 / depthimage_width);
-            heights.push_back(h);
-            heights.push_back((z + 1.0) / depthimage_width);
-            heights.push_back(1.0f);
-            heights.push_back(0.0f);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 3]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 4]);
 
-            h = heights_init[z * depthimage_width + x];
-            heights.push_back(x * 1.0 / depthimage_width);
-            heights.push_back(h);
-            heights.push_back(z * 1.0 / depthimage_width);
-            heights.push_back(0.0f);
-            heights.push_back(0.0f);
+
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 3]);
+            heights.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 4]);
+
+
+            heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5]);
+            heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 1]);
+            heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 2]);
+            heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 3]);
+            heights.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 4]);
+
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 1]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 3]);
+            heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 4]);
+
         }
     }
     SOIL_free_image_data(heightimage);
@@ -500,12 +506,12 @@ GLuint loadWaterTexture(const char* path)
     GLuint textureID;
     glGenTextures(1, &textureID);
     int width, height;
-    unsigned char* image = SOIL_load_image(path, &width, &height, 0, SOIL_LOAD_RGBA);
+    unsigned char* image = SOIL_load_image(path, &width, &height, 0, SOIL_LOAD_RGB);
 
     // Assign texture to ID
     glBindTexture(GL_TEXTURE_2D, textureID);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
