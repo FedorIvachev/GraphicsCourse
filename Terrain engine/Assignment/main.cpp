@@ -186,7 +186,6 @@ int main()
     unsigned char *heightimage = SOIL_load_image("data/heightmap.bmp", &depthimage_width, &depthimage_height, nullptr, SOIL_LOAD_L);
     std::vector <float> heights_init{};
     std::vector <float> heights{};
-    std::vector <float> details{};
 
 
     for (int x = 0; x < depthimage_height; x++) {
@@ -257,43 +256,6 @@ int main()
             heights.push_back(heights_init[(x * depthimage_width + z) * 5 + 4]);
             heights.push_back(0.0f);
             heights.push_back(0.0f);
-
-            // add details textures 
-            details.push_back(heights_init[(x * depthimage_width + z) * 5]);
-            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 1]);
-            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
-            details.push_back(0.0f);
-            details.push_back(0.0f);
-            
-            details.push_back(heights_init[((x + 1) * depthimage_width + z) * 5]);
-            details.push_back(heights_init[((x + 1) * depthimage_width + z) * 5 + 1]);
-            details.push_back(heights_init[((x + 1) * depthimage_width + z) * 5 + 2]);
-            details.push_back(0.0f);
-            details.push_back(1.0f);
-            
-            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
-            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
-            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
-            details.push_back(1.0f);
-            details.push_back(1.0f);
-            
-            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5]);
-            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 1]);
-            details.push_back(heights_init[((x + 1) * depthimage_width + z + 1) * 5 + 2]);
-            details.push_back(1.0f);
-            details.push_back(1.0f);
-            
-            details.push_back(heights_init[(x * depthimage_width + z + 1) * 5]);
-            details.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 1]);
-            details.push_back(heights_init[(x * depthimage_width + z + 1) * 5 + 2]);
-            details.push_back(1.0f);
-            details.push_back(0.0f);
-            
-            details.push_back(heights_init[(x * depthimage_width + z) * 5]);
-            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 1]);
-            details.push_back(heights_init[(x * depthimage_width + z) * 5 + 2]);
-            details.push_back(0.0f);
-            details.push_back(0.0f);
         }
     }
 
@@ -311,20 +273,6 @@ int main()
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (GLvoid*)(5 * sizeof(GLfloat)));
     glBindVertexArray(0);
-
-    // setup details VAO and VBO
-    GLuint detailsVAO, detailsVBO;
-    glGenVertexArrays(1, &detailsVAO);
-    glGenBuffers(1, &detailsVBO);
-    glBindVertexArray(detailsVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, detailsVBO);
-    glBufferData(GL_ARRAY_BUFFER, details.size() * sizeof(float), &details[0], GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-    glBindVertexArray(0);
-
     
     // Game loop
     while (!glfwWindowShouldClose(window))

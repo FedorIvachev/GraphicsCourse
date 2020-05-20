@@ -11,5 +11,5 @@ uniform sampler2D texture1;
 
 void main()
 {
-    color = texture(texture1, TexCoords2) * texture(texture0, TexCoords);
+    color = clamp(texture(texture1, TexCoords2) + texture(texture0, TexCoords) - vec4(0.5, 0.5, 0.5, 1.0), 0.0, 1.0);
 }
