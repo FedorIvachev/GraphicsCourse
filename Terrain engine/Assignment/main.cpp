@@ -31,22 +31,28 @@ void do_movement();
 GLuint loadTexture(const char* path);
 GLuint loadWaterTexture(const char* path);
 GLuint loadTerrainTexture(const char* path);
+void is_collide(int heightmap_width = 256);
 
 
 // Window dimensions
 GLuint WIDTH = 800, HEIGHT = 600;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
+Camera camera(glm::vec3(0.0f, 10.0f, 0.0f));
 GLfloat lastX  =  WIDTH  / 2.0;
 GLfloat lastY  =  HEIGHT / 2.0;
 bool    keys[1024];
 bool firstMouse = true;
 GLfloat scale = 30.0;
+bool is_collided = false;
 
 // Deltatime
 GLfloat deltaTime = 0.0f;    // Time between current frame and last frame
 GLfloat lastFrame = 0.0f;      // Time of last frame
+GLfloat lastPressed[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+// for collisions
+GLfloat heightmap[512][512];
 
 // The MAIN function, from here we start the application and run the game loop
 int main()
@@ -197,6 +203,7 @@ int main()
             h = (h < 0.41) ? 0.41 : h;
             heights_init.push_back(x * 1.0 / depthimage_height);
             heights_init.push_back(h / scale * 3.0);
+            heightmap[x][z] = h / scale * 3.0;
             heights_init.push_back(z * 1.0 / depthimage_width);
 
             // Texture coords
@@ -385,7 +392,7 @@ int main()
         glDepthMask(GL_TRUE);
 
 
-        // Render terrain // btw it should be rendered before the water so the reflections are calculated
+        // Render terrain
 
         terrainShader.Use();
         model = glm::mat4(1);
@@ -429,7 +436,6 @@ int main()
         glDisable(GL_TEXTURE_2D);
         //glDisable(GL_CLIP_DISTANCE0);
 
-
         // draw reversed terrain
 
         model = glm::mat4(1);
@@ -458,7 +464,7 @@ int main()
         waterShader.Use();
 
         model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f * scale, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0f, 0.002f * scale, 0.0f));
         GLint watermodelLoc = glGetUniformLocation(waterShader.Program, "model");
         GLint waterviewLoc = glGetUniformLocation(waterShader.Program, "view");
         GLint waterprojLoc = glGetUniformLocation(waterShader.Program, "projection");
@@ -478,7 +484,6 @@ int main()
         glBindVertexArray(skyboxVAO);
         glBindTexture(GL_TEXTURE_2D, waterTexture);
         glDrawArrays(GL_TRIANGLES, 30, 6);
-
         
         // Swap the screen buffers
         glfwSwapBuffers(window);
@@ -505,28 +510,64 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         glfwSetWindowShouldClose(window, GL_TRUE);
     if (key >= 0 && key < 1024)
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS) {
             keys[key] = true;
-        else if (action == GLFW_RELEASE)
+        }
+        else if (action == GLFW_RELEASE) {
             keys[key] = false;
+        }
     }
 }
 
 void do_movement()
 {
+    is_collide();
     // Camera controls
-    if (keys[GLFW_KEY_W])
+    if (keys[GLFW_KEY_W]) {
         camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (keys[GLFW_KEY_S])
+        lastPressed[0] = lastFrame;
+    }
+    if (keys[GLFW_KEY_S]) {
         camera.ProcessKeyboard(BACKWARD, deltaTime);
+        lastPressed[1] = lastFrame;
+    }
     if (keys[GLFW_KEY_A])
+    {
         camera.ProcessKeyboard(LEFT, deltaTime);
+        lastPressed[2] = lastFrame;
+    }
     if (keys[GLFW_KEY_D])
+    {
         camera.ProcessKeyboard(RIGHT, deltaTime);
+        lastPressed[3] = lastFrame;
+    }
     if (keys[GLFW_KEY_R])
+    {
         camera.ProcessKeyboard(UP, deltaTime);
+        lastPressed[4] = lastFrame;
+    }
     if (keys[GLFW_KEY_F])
+    {
         camera.ProcessKeyboard(DOWN, deltaTime);
+        lastPressed[5] = lastFrame;
+    }
+    if (lastFrame - lastPressed[0] < 100 * deltaTime) 
+        camera.ProcessKeyboard(FORWARD, 0.1 * deltaTime / ((lastFrame - lastPressed[0] + 0.1)));
+
+    if (lastFrame - lastPressed[1] < 100 * deltaTime)
+        camera.ProcessKeyboard(BACKWARD, 0.1 * deltaTime / ((lastFrame - lastPressed[1] + 0.1)));
+
+    if (lastFrame - lastPressed[2] < 100 * deltaTime)
+        camera.ProcessKeyboard(LEFT, 0.1 * deltaTime / ((lastFrame - lastPressed[2] + 0.1)));
+
+    if (lastFrame - lastPressed[3] < 100 * deltaTime)
+        camera.ProcessKeyboard(RIGHT, 0.1 * deltaTime / ((lastFrame - lastPressed[3] + 0.1)));
+
+    if (lastFrame - lastPressed[4] < 100 * deltaTime)
+        camera.ProcessKeyboard(UP, 0.1 * deltaTime / ((lastFrame - lastPressed[4] + 0.1)));
+
+    if (lastFrame - lastPressed[5] < 100 * deltaTime)
+        camera.ProcessKeyboard(DOWN, 0.1 * deltaTime / ((lastFrame - lastPressed[5] + 0.1)));
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -613,4 +654,25 @@ GLuint loadTerrainTexture(const char* path)
     GLuint image = SOIL_load_OGL_texture(path, SOIL_LOAD_AUTO,
         SOIL_CREATE_NEW_ID, SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_MULTIPLY_ALPHA);
     return image;
+}
+
+void is_collide(int heightmap_width)
+{
+    GLfloat cur_y = camera.Position.y;
+    if (cur_y < 1.0) {
+        //camera.ProcessKeyboard(UP, 1.0);
+        camera.Position.y = 1.0;
+    }
+    else {
+        float h_offset = -0.053f * scale;
+        if (camera.Position.x > 0.0 && camera.Position.z > 0.0 && (camera.Position.x - scale  * 1.0 < 0.0) && (camera.Position.z - scale * 1.0 < 0.0)) {
+            int x_ind = static_cast<int>(std::round(camera.Position.x / scale * heightmap_width));
+            int z_ind = static_cast<int>(std::round(camera.Position.z / scale * heightmap_width));
+            GLfloat ter_height = heightmap[x_ind][z_ind] * scale;
+           if (cur_y + h_offset - ter_height - 0.2 < 0.0) {
+
+                camera.Position.y = ter_height - h_offset + 0.2;
+            }
+        }
+    }
 }
