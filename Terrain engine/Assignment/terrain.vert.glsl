@@ -4,7 +4,6 @@ layout (location = 0) in vec3 position;
 layout (location = 1) in vec2 texCoord;
 layout (location = 2) in vec2 texCoord2;
 
-
 out vec2 TexCoords;
 out vec2 TexCoords2;
 out float cl;
@@ -26,8 +25,6 @@ void main()
     {
         cl = 1.0;
     }
-    
     TexCoords = vec2(texCoord.x, 1.0f - texCoord.y);
     TexCoords2 = vec2(texCoord2.x, 1.0f - texCoord2.y);
-
 }

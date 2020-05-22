@@ -9,7 +9,6 @@ out vec4 color;
 uniform sampler2D texture0;
 uniform sampler2D texture1;
 
-
 void main()
 {
     vec4 texcolor = texture(texture0, TexCoords);

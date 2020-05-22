@@ -38,7 +38,7 @@ void is_collide(int heightmap_width = 256);
 GLuint WIDTH = 800, HEIGHT = 600;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 10.0f, 0.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
 GLfloat lastX  =  WIDTH  / 2.0;
 GLfloat lastY  =  HEIGHT / 2.0;
 bool    keys[1024];
@@ -95,7 +95,6 @@ int main()
 
     // Build and compile our shader program
     Shader skyboxShader("skybox.vert.glsl", "skybox.frag.glsl");
-    Shader mainShader("main.vert.glsl", "main.frag.glsl");
     Shader waterShader("water.vert.glsl", "water.frag.glsl");
     Shader terrainShader("terrain.vert.glsl", "terrain.frag.glsl");
 
@@ -196,7 +195,7 @@ int main()
 
     for (int x = 0; x < depthimage_height; x++) {
         for (int z = 0; z < depthimage_width; z++) {
-            float h = heightimage[x * depthimage_width + z]; // ?????
+            float h = heightimage[x * depthimage_width + z];
 
             /* Normalize height to [-1, 1] */
             h = h / 127.5;
@@ -665,7 +664,9 @@ void is_collide(int heightmap_width)
     }
     else {
         float h_offset = -0.053f * scale;
-        if (camera.Position.x > 0.0 && camera.Position.z > 0.0 && (camera.Position.x - scale  * 1.0 < 0.0) && (camera.Position.z - scale * 1.0 < 0.0)) {
+        if (camera.Position.x > 0.0 && camera.Position.z > 0.0 && 
+            (camera.Position.x - scale  * 1.0 < 0.0) && 
+            (camera.Position.z - scale * 1.0 < 0.0)) {
             int x_ind = static_cast<int>(std::round(camera.Position.x / scale * heightmap_width));
             int z_ind = static_cast<int>(std::round(camera.Position.z / scale * heightmap_width));
             GLfloat ter_height = heightmap[x_ind][z_ind] * scale;
