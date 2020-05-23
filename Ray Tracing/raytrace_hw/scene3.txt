@@ -1,0 +1,97 @@
+background
+	color= 0.1 0.1 0.1
+end
+
+camera
+	O= -2 2 0.5
+	N= 0.6 1 -0.6
+	shade_quality= 1
+	drefl_quality= 1
+	image_H= 760
+	image_W= 1280
+	lens_H= 0.6
+	lens_W= 1.0
+end
+
+light point
+	O= 3 3 3
+	color= 1 1 1
+end
+
+primitive sphere
+	O= 0 6 -1.5
+	R= 0.5
+	color= 1 1 1
+	texture= marble.bmp
+	De= 0 0 1
+	Dc= 0 1 0
+	diff= 0.45
+	spec= 0.25
+	refl= 0.3
+	drefl= 0.25
+	blur= exp
+end
+
+
+primitive bezier
+	O1= -1 5 -2
+	O2= -1 5 -1.2
+	P= 0 0.1
+	P= 0.5 0.3
+	P= 1 0.01
+	Cylinder
+	color= 1 1 1
+	texture= blue.bmp
+	diff= 0.4
+	spec= 0.25
+	refl= 0.3
+end
+
+primitive cylinder
+	O1= 1 5.5 -2
+	O2= 1 5.5 -1.5
+	R= 0.3
+	color= 1 1 1
+	texture= brown.bmp
+	diff= 0.45
+	spec= 0.25
+	refl= 0.3
+end
+
+primitive sphere
+	O= 0 5 -1.8
+	R= 0.2
+	refr= 1
+	rindex= 1.7
+	absor= 0 0 1
+end
+
+primitive square
+	O= -0.5 7.2 -1.5
+	Dx= 0.2 7.5 -1.5
+	Dy= -0.5 7 -2.3
+	color= 1 1 0.8
+	refl= 1
+end
+
+primitive plane
+	N= 0 0 1
+	R= -2
+	color= 1 1 1
+	diff= 0.3
+	refl= 0.7
+	drefl= 0.25
+	texture= floor.bmp
+	Dx= 8 0 0
+	Dy= 0 8 0
+	blur= exp
+end
+
+primitive plane
+	N= 0 0 -1
+	R= -4
+	color= 0.5 0.5 1
+	diff= 1
+	Dx= 8 0 0
+	Dy= 0 8 0
+end

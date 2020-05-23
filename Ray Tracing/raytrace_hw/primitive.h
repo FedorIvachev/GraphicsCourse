@@ -146,7 +146,7 @@ public:
 	Color GetTexture(Vector3 crash_C);
 };
 
-class Bezier_slice : public Primitive {
+class Bezier_math : public Primitive {
 	Vector3 O1, O2;
 	Vector3 N, Nx, Ny;
 	std::vector<double> R;
@@ -155,8 +155,8 @@ class Bezier_slice : public Primitive {
 	Cylinder* boundingCylinder;
 
 public:
-	Bezier_slice() : Primitive() {boundingCylinder = NULL; degree = -1;}
-	~Bezier_slice() {}
+	Bezier_math() : Primitive() {boundingCylinder = NULL; degree = -1;}
+	~Bezier_math() {}
 
 	void Input( std::string , std::stringstream& );
 	CollidePrimitive Collide( Vector3 ray_O , Vector3 ray_V );
