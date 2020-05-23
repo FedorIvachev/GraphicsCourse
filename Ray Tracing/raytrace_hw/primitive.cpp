@@ -232,7 +232,6 @@ CollidePrimitive Cylinder::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	CollidePrimitive ret;
 
 	//NEED TO IMPLEMENT
-	//Only half of cylinder is rendered/// FIX IT
 	ray_V = ray_V.GetUnitVector();
 	Vector3 P = ray_O - O1;
 	Vector3 L = (O2 - O1).GetUnitVector();
@@ -329,14 +328,22 @@ Color Cylinder::GetTexture(Vector3 crash_C) {
 	double v = 0;
 	if (((crash_C - O1).Dot(O2 - O1) < EPS && (crash_C - O1).Dot(O2 - O1) > -EPS) 
 		|| ((crash_C - O2).Dot(O2 - O1) < EPS && (crash_C - O2).Dot(O2 - O1) > -EPS)) {
-
+		// need ton fix
 		u = crash_C.x - O2.x;
 		v = crash_C.y - O2.y;
 	}
 	else {
-		double fi = atan((crash_C.x) / (crash_C.z));
-		u = std::fmod(fi, 2.0 * PI);
-		v = (crash_C.y - O1.y) / (O2 - O1).Module();
+		Vector3 O1C = crash_C - O1;
+		Vector3 O1O2 = O2 - O1;
+		double proj = (O1C.Dot(O1O2) / O1O2.Module());
+		Vector3 Cc = O1 + O1O2 * (proj / O1O2.Module());
+		Vector3 CcC = crash_C - Cc;
+		Vector3 Norm = CcC.GetUnitVector();
+		//v = O1C.Dot(Norm) / O1O2.Module();
+		//double fi = atan((crash_C.x) / (crash_C.z));
+		double fi = std::atan2(O1C.Dot(Norm * Vector3(0, 1, 0)), O1C.Dot(Norm * Vector3(1, 0, 0)));
+		u = std::fmod(fi, 2.0 / PI);
+		v = (crash_C.z - O1.z) / (O2.z - O1.z);
 	}
 
 	return material->texture->GetSmoothColor( u , v );
