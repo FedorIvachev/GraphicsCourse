@@ -76,16 +76,15 @@ Color Raytracer::CalnReflection(CollidePrimitive collide_primitive , Vector3 ray
 		
 
 		ray_V = ray_V.GetUnitVector();
-		Vector3 u = ray_V * collide_primitive.N;
-		Vector3 v = ray_V * u;
-		Vector3 Random_point_in_unit_sphere = primitive->GetMaterial()->blur->GetXYZ();
+		Vector3 u = ray_V * collide_primitive.N * primitive->GetMaterial()->drefl;
+		Vector3 v = ray_V * u * primitive->GetMaterial()->drefl;
+		Vector3 Random_point_in_unit_sphere = primitive->GetMaterial()->blur->GetXYZ() * primitive->GetMaterial()->drefl;
+		Color ret;
+		for (int i = 0; i < camera->GetDreflQuality(); i++) {
+			ret += RayTracing(collide_primitive.C, ray_V + u * Random_point_in_unit_sphere.x + v * Random_point_in_unit_sphere.y, dep + 1, hash);
+		}
 
-		// u_ = - a /2 + ksi a 
-		// v_ = - a/2 + ksi' a
-		// ray_V' = ray_V + u_ u + v_ v
-
-		return RayTracing(collide_primitive.C, ray_V + u * Random_point_in_unit_sphere.x + v * Random_point_in_unit_sphere.y, dep + 1, hash)
-			* primitive->GetMaterial()->color * primitive->GetMaterial()->refl;
+		return ret * primitive->GetMaterial()->color * primitive->GetMaterial()->refl / camera->GetDreflQuality();
 	}
 }
 
@@ -163,7 +162,8 @@ void Raytracer::CreateAll()
 			if ( type == "plane" ) new_primitive = new Plane;
 			if ( type == "square" ) new_primitive = new Square;
 			if ( type == "cylinder" ) new_primitive = new Cylinder;
-			if ( type == "bezier" ) new_primitive = new Bezier;
+			if ( type == "bezier_slice") new_primitive = new Bezier_slice;
+			if ( type == "bezier") new_primitive = new Bezier;
 			if ( new_primitive != NULL ) {
 				new_primitive->SetNext( primitive_head );
 				primitive_head = new_primitive;
