@@ -382,7 +382,7 @@ CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	double r_cur;
 	
 	double min_dist = 1e9;
-	double step_height = 0.2;
+	double step_height = 0.05;
 	double tmp_dist;
 	double min_u = 0;
 	for (double u = 0; u - (1 - step_height) < EPS;) {
