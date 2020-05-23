@@ -335,9 +335,8 @@ Color Cylinder::GetTexture(Vector3 crash_C) {
 	}
 	else {
 		double fi = atan((crash_C.x) / (crash_C.z));
-		u = fi / 2.0 / PI;
-
-		v = (crash_C.y - O1.y + 1) / 2;
+		u = std::fmod(fi, 2.0 * PI);
+		v = (crash_C.y - O1.y) / (O2 - O1).Module();
 	}
 
 	return material->texture->GetSmoothColor( u , v );
