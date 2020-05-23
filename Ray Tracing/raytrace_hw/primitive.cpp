@@ -378,22 +378,18 @@ CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 	CollidePrimitive ret1 = boundingCylinder->Collide(ray_O, ray_V);
 
 	if (!ret1.isCollide) return ret;
-	//double bez_len = (ret1.C - O1).Dot(O2 - O1) / (O2 - O1).Module2(); // u
 	Vector3 z_cur, z_next;
 	double r_cur;
-	//double R1 = (1 - proj_len) * (1 - proj_len) * Z[0] * R[0] + (1 - proj_len) * Z[1] * R[1] + proj_len * Z[2] * R[2];
-	//ret1.C = ret1.C - ret1.N * (R1 / boundingCylinder->R);
-	//ret1.dist = ret1.dist - (ret1.N * (R1 / boundingCylinder->R)).Dot(ray_V);
 	
 	double min_dist = 1e9;
-	double step_height = 0.05;
+	double step_height = 0.2;
 	double tmp_dist;
 	double min_u = 0;
 	for (double u = 0; u - (1 - step_height) < EPS;) {
-		z_cur = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
-		r_cur = (1 - u) * (1 - u) * R[0] + 2 * u * (1 - u) * R[1] + u * u * R[2];
+		z_cur = O1 + (O2 - O1) * P(u, Z);
+		r_cur = P(u, R);
 		u += step_height;
-		z_next = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
+		z_next = O1 + (O2 - O1) * P(u, Z);
 		Cylinder* curCylinder = new Cylinder(z_cur, z_next, r_cur);
 		tmp_dist = curCylinder->Collide(ray_O, ray_V).dist;
 		if (tmp_dist < min_dist) {
@@ -403,16 +399,24 @@ CollidePrimitive Bezier::Collide( Vector3 ray_O , Vector3 ray_V ) {
 		delete curCylinder;
 	}
 	double u = min_u;
-	z_cur = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
-	r_cur = (1 - u) * (1 - u) * R[0] + 2 * u * (1 - u) * R[1] + u * u * R[2];
+	z_cur = O1 + (O2 - O1) * P(u, Z);
+	r_cur = P(u, R);
 	u += step_height;
-	z_next = O1 + (O2 - O1) * ((1 - u) * (1 - u) * Z[0] + 2 * u * (1 - u) * Z[1] + u * u * Z[2]);
+	z_next = O1 + (O2 - O1) * P(u, Z);
 	Cylinder* curCylinder = new Cylinder(z_cur, z_next, r_cur);
 	ret1 = curCylinder->Collide(ray_O, ray_V);
 	delete curCylinder;
 	if (ret1.isCollide == false) return ret;
 	ret1.collide_primitive = this;
 	return ret1;
+}
+
+double Bezier::P(double u, std::vector<double> P) {
+	double ret = 0.0;
+	for (int i = 0; i < degree + 1; i++) {
+		ret += Combination[degree][i] * pow(1 - u, degree - i) * pow(u, i) * P[i];
+	}
+	return ret;
 }
 
 Color Bezier::GetTexture(Vector3 crash_C) {

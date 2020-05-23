@@ -178,6 +178,7 @@ public:
 	void Input(std::string, std::stringstream&);
 	CollidePrimitive Collide(Vector3 ray_O, Vector3 ray_V);
 	Color GetTexture(Vector3 crash_C);
+	double P(double u, std::vector<double> P);
 };
 
 
